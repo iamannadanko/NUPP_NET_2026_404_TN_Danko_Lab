@@ -4,15 +4,12 @@ namespace Library.Common.Models
 {
     // Делегат
     public delegate void ItemStatusChangedHandler(string message);
-
     public abstract class LibraryItem : IIdentifiable
     {
         // Статичне поле
         private static int _totalItemsCount;
-
         // Подія
         public event ItemStatusChangedHandler OnStatusChanged;
-
         // Властивості (від 3-х у класі)
         public Guid Id { get; set; }
         public string Title { get; set; }
@@ -24,7 +21,6 @@ namespace Library.Common.Models
         {
             _totalItemsCount = 0;
         }
-
         // Конструктор
         protected LibraryItem()
         {
@@ -32,20 +28,17 @@ namespace Library.Common.Models
             IsAvailable = true;
             _totalItemsCount++;
         }
-
         // Конструктор з параметрами
         protected LibraryItem(string title, int publicationYear) : this()
         {
             Title = title;
             PublicationYear = publicationYear;
         }
-
         // Статичний метод
         public static int GetTotalItemsCount()
         {
             return _totalItemsCount;
         }
-
         // Метод
         public virtual void ChangeAvailability(bool available)
         {
