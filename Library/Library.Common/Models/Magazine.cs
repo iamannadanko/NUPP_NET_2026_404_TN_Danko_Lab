@@ -28,5 +28,20 @@ namespace Library.Common.Models
         {
             return $"[Журнал] ID: {Id} | \"{Title}\" №{IssueNumber} ({PublicationYear}), Видавництво: {Publisher}, Категорія: {Category}, Доступний: {IsAvailable}";
         }
+
+        // Статичний фабричний метод для створення випадкового журналу
+        public static Magazine CreateNew(Random? rnd = null)
+        {
+            rnd ??= Random.Shared;
+            var titles = new[] { "Вісник", "Наука і життя", "Пізнайко", "Український журнал", "Журнал" };
+            var pubs = new[] { "Наука", "Освіта", "Культура", "Життя" };
+            var cats = new[] { "Наука", "Історія", "Туризм", "Мистецтво" };
+            string title = titles[rnd.Next(titles.Length)];
+            int issue = rnd.Next(1, 200);
+            string pub = pubs[rnd.Next(pubs.Length)];
+            string cat = cats[rnd.Next(cats.Length)];
+            int year = rnd.Next(1990, 2024);
+            return new Magazine(title, issue, pub, cat, year);
+        }
     }
 }
