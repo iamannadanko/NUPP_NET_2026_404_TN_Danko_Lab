@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -31,7 +31,6 @@ namespace Library.ConsoleApp
             Console.WriteLine($"Starting parallel async creation of {count} books...");
 
             var range = Enumerable.Range(0, count);
-            var rnd = new Random();
 
             // Parallel.ForEachAsync - сучасний варіант для асинхронного паралелізму
             await Parallel.ForEachAsync(range, new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount }, 
@@ -41,8 +40,7 @@ namespace Library.ConsoleApp
                     await semaphore.WaitAsync(cancellationToken);
                     try
                     {
-                        var book = Book.CreateNew(rnd);
-                        // Видалення книги асинхронне - без блокування!
+                        var book = Book.CreateNew();
                         await bookService.CreateAsync(book);
 
                         // Демонстрація lock для безпечного оновлення счету
@@ -102,7 +100,10 @@ namespace Library.ConsoleApp
             }
 
             Console.WriteLine("\nPress any key to exit...");
-            Console.ReadKey();
+            if (!Console.IsInputRedirected)
+            {
+                Console.ReadKey();
+            }
         }
     }
 }

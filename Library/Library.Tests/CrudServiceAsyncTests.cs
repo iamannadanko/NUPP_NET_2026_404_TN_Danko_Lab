@@ -9,7 +9,7 @@ using Library.Common.Services;
 
 namespace Library.Tests
 {
-    public class CrudServiceAsyncTests
+    public class CrudServiceAsyncTests : IDisposable
     {
         private const string TestFilePath = "test_books.json";
 
@@ -323,9 +323,9 @@ namespace Library.Tests
 
             // Assert
             Assert.Equal(3, allBooks.Count);
-            Assert.True(allBooks.Any(b => b.Title == "Book 1"));
-            Assert.True(allBooks.Any(b => b.Title == "Book 2"));
-            Assert.True(allBooks.Any(b => b.Title == "Book 3"));
+            Assert.Contains(allBooks, b => b.Title == "Book 1");
+            Assert.Contains(allBooks, b => b.Title == "Book 2");
+            Assert.Contains(allBooks, b => b.Title == "Book 3");
         }
 
         public void Dispose()

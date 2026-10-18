@@ -32,7 +32,7 @@ namespace Library.Common.Models
         // Статичний фабричний метод для створення випадкової книги
         public static Book CreateNew(Random? rnd = null)
         {
-            rnd ??= new Random();
+            rnd ??= Random.Shared;
             var titles = new[] { "Кобзар", "Тигролови", "Тіні забутих предків", "Лісова пісня", "Енеїда" };
             var authors = new[] { "Тарас Шевченко", "Іван Багряний", "Михайло Коцюбинський", "Леся Українка", "Іван Котляревський" };
             string title = titles[rnd.Next(titles.Length)];

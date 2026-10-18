@@ -32,7 +32,7 @@ namespace Library.Common.Models
         // Статичний фабричний метод для створення випадкового журналу
         public static Magazine CreateNew(Random? rnd = null)
         {
-            rnd ??= new Random();
+            rnd ??= Random.Shared;
             var titles = new[] { "Вісник", "Наука і життя", "Пізнайко", "Український журнал", "Журнал" };
             var pubs = new[] { "Наука", "Освіта", "Культура", "Життя" };
             var cats = new[] { "Наука", "Історія", "Туризм", "Мистецтво" };

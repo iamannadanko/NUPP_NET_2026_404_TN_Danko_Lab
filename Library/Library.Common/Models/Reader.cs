@@ -33,7 +33,7 @@ namespace Library.Common.Models
         // Статичний фабричний метод для створення випадкового читача
         public static Reader CreateNew(Random? rnd = null)
         {
-            rnd ??= new Random();
+            rnd ??= Random.Shared;
             var names = new[] { "Олександр", "Марія", "Іван", "Катерина", "Андрій", "Ірина" };
             var surnames = new[] { "Петренко", "Іванов", "Шевченко", "Коваленко", "Бондар" };
             string full = $"{names[rnd.Next(names.Length)]} {surnames[rnd.Next(surnames.Length)]}";
