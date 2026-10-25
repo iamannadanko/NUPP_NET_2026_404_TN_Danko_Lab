@@ -1,12 +1,12 @@
 using System;
 using System.Linq;
 using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
-using System.Collections.Concurrent;
-using Library.Common.Extensions;
-using Library.Common.Models;
-using Library.Common.Services;
+using Microsoft.EntityFrameworkCore;
+using Library.Infrastructure;
+using Library.Infrastructure.Models;
+using Library.Infrastructure.Repositories;
+using Library.Infrastructure.Services;
 
 namespace Library.ConsoleApp
 {
@@ -15,91 +15,158 @@ namespace Library.ConsoleApp
         static async Task Main(string[] args)
         {
             Console.OutputEncoding = Encoding.UTF8;
-            Console.WriteLine("=== LAB2: Async CRUD, Parallel.ForEachAsync, LINQ stats ===\n");
+            Console.WriteLine("=================================================================");
+            Console.WriteLine("       ЛАБОРАТОРНА РОБОТА №3: Entity Framework Core & Supabase   ");
+            Console.WriteLine("=================================================================\n");
 
-            const int count = 2000; // number of objects to create
-            var bookService = new CrudServiceAsync<Book>("library_books_async.json");
+            // 1. Ініціалізація контексту бази даних
+            using var context = new LibraryContext();
+            Console.WriteLine("-> Підключення до хмарної бази даних Supabase (PostgreSQL)...");
 
-            // Synchronization primitives examples
-            var statsLock = new object(); // lock об'єкт-замок для критичної секції (взаємне виключення в пам'яті)
-            var semaphore = new SemaphoreSlim(Environment.ProcessorCount); // обмежує кількість потоків, які можуть одночасно виконувати операцію
-            var saveCompleted = new AutoResetEvent(false); //сигналізатор(світлофор): один потік спить, поки інший не подасть сигнал Set()
+            // 2. Ініціалізація Репозиторіїв (Завдання 4)
+            var bookRepo = new Repository<BookModel>(context);
+            var publisherRepo = new Repository<PublisherModel>(context);
+            var magazineRepo = new Repository<MagazineModel>(context);
+            var readerRepo = new Repository<ReaderModel>(context);
+            var rentalRepo = new Repository<BookRentalModel>(context);
 
-            int created = 0;
+            // 3. Ініціалізація оновленого асинхронного CRUD сервісу на базі репозиторію (Завдання 5)
+            var bookService = new DbCrudServiceAsync<BookModel>(bookRepo);
 
-            // Повноцінна асинхронна паралельність з Parallel.ForEachAsync (.NET 6+)
-            Console.WriteLine($"Starting parallel async creation of {count} books...");
+            Console.WriteLine("-> CRUD-сервіс успішно підключено до репозиторію бази даних!\n");
 
-            var range = Enumerable.Range(0, count);
-
-            // Parallel.ForEachAsync - сучасний варіант для асинхронного паралелізму
-            await Parallel.ForEachAsync(range, new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount }, 
-                async (i, cancellationToken) =>
-                {
-                    // Демонстрація SemaphoreSlim для контролю конкурентності
-                    await semaphore.WaitAsync(cancellationToken);
-                    try
-                    {
-                        var book = Book.CreateNew();
-                        await bookService.CreateAsync(book);
-
-                        // Демонстрація lock для безпечного оновлення счету
-                        lock (statsLock)
-                        {
-                            created++;
-                            if (created % 500 == 0)
-                            {
-                                Console.WriteLine($"Created: {created}");
-                            }
-                        }
-                    }
-                    finally
-                    {
-                        semaphore.Release();
-                    }
-                });
-
-            Console.WriteLine($"Finished creating {created} books.\n");
-
-            // Читання снимку і обчислення статистики через LINQ
-            var all = (await bookService.ReadAllAsync()).ToList();
-            if (all.Any())
+            // -------------------------------------------------------------
+            // ДЕМОНСТРАЦІЯ ЗВ'ЯЗКУ 1:N (Один-до-багатьох): Publisher -> Magazines
+            // -------------------------------------------------------------
+            Console.WriteLine("--- 1. Демонстрація зв'язку 1:N (Видавництво -> Журнали) ---");
+            var publisher = new PublisherModel
             {
-                // Демонстрація LINQ для min/max/average
-                var minPages = all.Min(b => b.PageCount);
-                var maxPages = all.Max(b => b.PageCount);
-                var avgPages = all.Average(b => b.PageCount);
+                Name = "Наукова Думка",
+                Address = "м. Київ, вул. Грушевського, 4"
+            };
+            await publisherRepo.AddAsync(publisher);
 
-                var minYear = all.Min(b => b.PublicationYear);
-                var maxYear = all.Max(b => b.PublicationYear);
-                var avgYear = all.Average(b => b.PublicationYear);
+            var magazine = new MagazineModel
+            {
+                Title = "Вісник Академії Наук",
+                PublicationYear = 2024,
+                IssueNumber = 12,
+                Category = "Наука та Технології",
+                PublisherId = publisher.Id
+            };
+            await magazineRepo.AddAsync(magazine);
+            Console.WriteLine($"[+] Створено видавництво: \"{publisher.Name}\" (ID: {publisher.Id})");
+            Console.WriteLine($"[+] До нього додано журнал: \"{magazine.Title}\" №{magazine.IssueNumber} (Видавництво ID: {magazine.PublisherId})\n");
 
-                Console.WriteLine("--- Statistics for generated books (LINQ) ---");
-                Console.WriteLine($"Pages: min={minPages}, max={maxPages}, avg={avgPages:F2}");
-                Console.WriteLine($"Year:  min={minYear}, max={maxYear}, avg={avgYear:F2}");
-                Console.WriteLine($"Total books: {all.Count()}\n");
+            // -------------------------------------------------------------
+            // ДЕМОНСТРАЦІЯ ЗВ'ЯЗКУ 1:1 (Один-до-одного): Reader <-> LibraryCard
+            // -------------------------------------------------------------
+            Console.WriteLine("--- 2. Демонстрація зв'язку 1:1 (Читач <-> Читацький квиток) ---");
+            var reader = new ReaderModel
+            {
+                FullName = "Олександр Петренко",
+                Email = "oleksandr.petrenko@example.com"
+            };
+            await readerRepo.AddAsync(reader);
+
+            var card = new LibraryCardModel
+            {
+                CardNumber = "CARD-2026-0042",
+                ReaderId = reader.Id,
+                IssueDate = DateTime.UtcNow,
+                ExpiryDate = DateTime.UtcNow.AddYears(1)
+            };
+            context.LibraryCards.Add(card);
+            await context.SaveChangesAsync();
+            Console.WriteLine($"[+] Створено читача: {reader.FullName} ({reader.Email})");
+            Console.WriteLine($"[+] Йому видано читацький квиток 1:1: №{card.CardNumber} (ReaderId: {card.ReaderId})\n");
+
+            // -------------------------------------------------------------
+            // ДЕМОНСТРАЦІЯ CRUD СЕРВІСУ (Create, Read, Update, Delete) + TPT
+            // -------------------------------------------------------------
+            Console.WriteLine("--- 3. Демонстрація методів CRUD-сервісу через Репозиторій ---");
+
+            // CreateAsync
+            var book1 = new BookModel
+            {
+                Title = "Тіні забутих предків",
+                Author = "Михайло Коцюбинський",
+                PublicationYear = 1911,
+                ISBN = "978-966-03-8472-1",
+                PageCount = 224
+            };
+            var book2 = new BookModel
+            {
+                Title = "Кобзар",
+                Author = "Тарас Шевченко",
+                PublicationYear = 1840,
+                ISBN = "978-966-03-1234-5",
+                PageCount = 640
+            };
+            var book3 = new BookModel
+            {
+                Title = "Тигролови",
+                Author = "Іван Багряний",
+                PublicationYear = 1944,
+                ISBN = "978-966-03-9999-0",
+                PageCount = 312
+            };
+
+            await bookService.CreateAsync(book1);
+            await bookService.CreateAsync(book2);
+            await bookService.CreateAsync(book3);
+            Console.WriteLine("[+] Через CRUD сервіс успішно додано 3 книги в базу Supabase!");
+
+            // ReadAsync (за Guid)
+            var fetchedBook = await bookService.ReadAsync(book1.Id);
+            Console.WriteLine($"[?] ReadAsync(Id) знайдено: \"{fetchedBook.Title}\" ({fetchedBook.Author}), сторінок: {fetchedBook.PageCount}");
+
+            // UpdateAsync
+            fetchedBook.PageCount = 230; // Оновлюємо кількість сторінок
+            await bookService.UpdateAsync(fetchedBook);
+            var updatedBook = await bookService.ReadAsync(book1.Id);
+            Console.WriteLine($"[*] UpdateAsync: оновлено сторінки до {updatedBook.PageCount} (Успішно!)");
+
+            // -------------------------------------------------------------
+            // ДЕМОНСТРАЦІЯ ЗВ'ЯЗКУ N:M (Багато-до-багатьох): Reader <-> BookRental <-> Book
+            // -------------------------------------------------------------
+            Console.WriteLine("\n--- 4. Демонстрація зв'язку N:M (Оренда книги читачем) ---");
+            var rental = new BookRentalModel
+            {
+                ReaderId = reader.Id,
+                BookId = book1.Id,
+                RentalDate = DateTime.UtcNow
+            };
+            await rentalRepo.AddAsync(rental);
+            Console.WriteLine($"[+] Читач {reader.FullName} орендував книгу \"{book1.Title}\" (Запис оренди ID: {rental.Id})\n");
+
+            // -------------------------------------------------------------
+            // ДЕМОНСТРАЦІЯ ПАГІНАЦІЇ (ReadAllAsync з page і amount)
+            // -------------------------------------------------------------
+            Console.WriteLine("--- 5. Демонстрація пагінації з бази даних (Сторінка 1, розмір 2) ---");
+            var page1 = (await bookService.ReadAllAsync(page: 1, amount: 2)).ToList();
+            int index = 1;
+            foreach (var b in page1)
+            {
+                Console.WriteLine($"   {index++}. \"{b.Title}\" - {b.Author} ({b.PublicationYear}) | ISBN: {b.ISBN}");
             }
 
-            // Асинхронне збереження в фоні з сигналізацією через AutoResetEvent
-            Console.WriteLine("Saving collection to file asynchronously...");
-            _ = Task.Run(async () =>
-            {
-                await bookService.SaveAsync();
-                // Демонстрація AutoResetEvent - сигнал після завершення
-                saveCompleted.Set();
-            });
+            // -------------------------------------------------------------
+            // ДЕМОНСТРАЦІЯ TPT (Table-per-Type) Наслідування
+            // -------------------------------------------------------------
+            Console.WriteLine("\n--- 6. Перевірка TPT-наслідування (Базова таблиця LibraryItems) ---");
+            var totalLibraryItems = await context.LibraryItems.CountAsync();
+            var totalBooks = await context.Books.CountAsync();
+            var totalMagazines = await context.Magazines.CountAsync();
+            Console.WriteLine($"-> Загальна кількість сутностей у базовій таблиці LibraryItems: {totalLibraryItems}");
+            Console.WriteLine($"-> З них книг (таблиця Books): {totalBooks}");
+            Console.WriteLine($"-> З них журналів (таблиця Magazines): {totalMagazines}");
 
-            // Очікування сигналу AutoResetEvent (демонстрація синхронізаційного примітиву)
-            saveCompleted.WaitOne();
-            Console.WriteLine("Save completed and signaled via AutoResetEvent.\n");
+            Console.WriteLine("\n=================================================================");
+            Console.WriteLine("        Усі операції успішно виконано в базі даних Supabase!     ");
+            Console.WriteLine("=================================================================");
 
-            Console.WriteLine("Sample items:");
-            foreach (var item in all.Take(5))
-            {
-                Console.WriteLine(item);
-            }
-
-            Console.WriteLine("\nPress any key to exit...");
+            Console.WriteLine("\nНатисніть будь-яку клавішу для завершення...");
             if (!Console.IsInputRedirected)
             {
                 Console.ReadKey();
