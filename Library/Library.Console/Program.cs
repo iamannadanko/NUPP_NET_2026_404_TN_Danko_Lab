@@ -21,9 +21,9 @@ namespace Library.ConsoleApp
             var bookService = new CrudServiceAsync<Book>("library_books_async.json");
 
             // Synchronization primitives examples
-            var statsLock = new object(); // lock example для счету
-            var semaphore = new SemaphoreSlim(Environment.ProcessorCount); // обмеження конкурентних операцій
-            var saveCompleted = new AutoResetEvent(false); // сигнальний примітив для SaveAsync
+            var statsLock = new object(); // lock об'єкт-замок для критичної секції (взаємне виключення в пам'яті)
+            var semaphore = new SemaphoreSlim(Environment.ProcessorCount); // обмежує кількість потоків, які можуть одночасно виконувати операцію
+            var saveCompleted = new AutoResetEvent(false); //сигналізатор(світлофор): один потік спить, поки інший не подасть сигнал Set()
 
             int created = 0;
 
