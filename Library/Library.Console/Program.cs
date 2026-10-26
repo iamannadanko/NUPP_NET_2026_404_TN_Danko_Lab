@@ -162,8 +162,52 @@ namespace Library.ConsoleApp
             Console.WriteLine($"-> З них книг (таблиця Books): {totalBooks}");
             Console.WriteLine($"-> З них журналів (таблиця Magazines): {totalMagazines}");
 
+            // -------------------------------------------------------------
+            // ДОДАТКОВЕ ЗАВДАННЯ (+2 БАЛИ): Нереляційна база даних MongoDB (Library.Nosql)
+            // -------------------------------------------------------------
             Console.WriteLine("\n=================================================================");
-            Console.WriteLine("        Усі операції успішно виконано в базі даних Supabase!     ");
+            Console.WriteLine("    ДОДАТКОВЕ ЗАВДАННЯ (+2 БАЛИ): Нереляційна база даних MongoDB  ");
+            Console.WriteLine("=================================================================");
+            try
+            {
+                var mongoRepo = new Library.Nosql.MongoRepository<Library.Nosql.Models.BookDocument>();
+                var nosqlBook1 = new Library.Nosql.Models.BookDocument
+                {
+                    Title = "Дюна (Хроніки Дюни)",
+                    Author = "Френк Герберт",
+                    PublicationYear = 1965,
+                    ISBN = "978-617-12-6800-0",
+                    PageCount = 656,
+                    Genres = new System.Collections.Generic.List<string> { "Наукова фантастика", "Космоопера", "Бестселер" }
+                };
+                var nosqlBook2 = new Library.Nosql.Models.BookDocument
+                {
+                    Title = "1984",
+                    Author = "Джордж Орвелл",
+                    PublicationYear = 1949,
+                    ISBN = "978-966-2355-57-4",
+                    PageCount = 320,
+                    Genres = new System.Collections.Generic.List<string> { "Антиутопія", "Класика", "Політика" }
+                };
+
+                await mongoRepo.AddAsync(nosqlBook1);
+                await mongoRepo.AddAsync(nosqlBook2);
+                Console.WriteLine("[+] Успішно додано 2 BSON/JSON документи у колекцію 'BookDocument' в MongoDB!");
+
+                var allMongoBooks = (await mongoRepo.GetAllAsync()).ToList();
+                Console.WriteLine($"[?] Усього документів у MongoDB (база 'LibraryNosqlDb'): {allMongoBooks.Count}");
+                foreach (var mb in allMongoBooks.Take(2))
+                {
+                    Console.WriteLine($"   * ID: {mb.Id} | \"{mb.Title}\" - {mb.Author} | Жанри: [{string.Join(", ", mb.Genres)}]");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[!] Помилка MongoDB: {ex.Message}");
+            }
+
+            Console.WriteLine("\n=================================================================");
+            Console.WriteLine("        Усі операції успішно виконано (Реляційна + NoSQL БД)!    ");
             Console.WriteLine("=================================================================");
 
             Console.WriteLine("\nНатисніть будь-яку клавішу для завершення...");
