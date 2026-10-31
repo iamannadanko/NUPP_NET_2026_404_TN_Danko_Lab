@@ -27,14 +27,14 @@ namespace Library.Common.Services
 
         public Task<bool> CreateAsync(T element)
         {
-            if (element == null) throw new ArgumentNullException(nameof(element));
+            if (element == null) throw new ArgumentNullException(nameof(element)); //додавання елемента
             bool added = _items.TryAdd(element.Id, element);
             return Task.FromResult(added);
         }
 
         public Task<T> ReadAsync(Guid id)
         {
-            _items.TryGetValue(id, out var item);
+            _items.TryGetValue(id, out var item); //шукання за ід 
             return Task.FromResult(item!);
         }
 
@@ -44,7 +44,7 @@ namespace Library.Common.Services
             return Task.FromResult<IEnumerable<T>>(snapshot);
         }
 
-        public Task<IEnumerable<T>> ReadAllAsync(int page, int amount)
+        public Task<IEnumerable<T>> ReadAllAsync(int page, int amount) //пагінація
         {
             if (page < 1) page = 1;
             if (amount < 1) amount = 10;
@@ -52,7 +52,7 @@ namespace Library.Common.Services
             return Task.FromResult<IEnumerable<T>>(snapshot);
         }
 
-        public Task<bool> UpdateAsync(T element)
+        public Task<bool> UpdateAsync(T element) //атомарне оновлення
         {
             if (element == null) throw new ArgumentNullException(nameof(element));
             while (_items.TryGetValue(element.Id, out var existing))
@@ -71,29 +71,29 @@ namespace Library.Common.Services
 
         public async Task<bool> SaveAsync()
         {
-            await _fileSemaphore.WaitAsync();
+            await _fileSemaphore.WaitAsync();// Чекаємо своєї черги на доступ до файлу
             try
             {
                 var options = new JsonSerializerOptions
                 {
-                    WriteIndented = true,
-                    Encoder = JavaScriptEncoder.Create(UnicodeRanges.All)
+                    WriteIndented = true, //форматування
+                    Encoder = JavaScriptEncoder.Create(UnicodeRanges.All) //кирилиця
                 };
-                var list = _items.Values.ToList();
-                string json = JsonSerializer.Serialize(list, options);
+                var list = _items.Values.ToList(); //знімок
+                string json = JsonSerializer.Serialize(list, options); //асинхронна операція запису на жорсткий диск 
                 await File.WriteAllTextAsync(FilePath, json);
                 return true;
             }
             finally
             {
-                _fileSemaphore.Release();
+                _fileSemaphore.Release(); //звільняємо семафор у блоці finally!
             }
         }
 
         // IEnumerable<T> implementation
         public IEnumerator<T> GetEnumerator()
         {
-            return _items.Values.ToList().GetEnumerator();
+            return _items.Values.ToList().GetEnumerator(); // Повертаємо ітератор по знімку даних
         }
 
         IEnumerator IEnumerable.GetEnumerator()

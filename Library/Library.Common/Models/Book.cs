@@ -29,7 +29,8 @@ namespace Library.Common.Models
             return $"[Книга] ID: {Id} | \"{Title}\" - {Author} ({PublicationYear}), {PageCount} стор., Доступна: {IsAvailable}";
         }
 
-        // Статичний фабричний метод для створення випадкової книги
+        // Статичний фабричний метод для створення випадкової книги (вимога завдання: метод CreateNew)
+        // Використовує Random.Shared, що гарантує потокобезпечну генерацію при багатопоточному виклику
         public static Book CreateNew(Random? rnd = null)
         {
             rnd ??= Random.Shared;

@@ -1,5 +1,7 @@
 <Solution>
   <Project Path="Library.Common/Library.Common.csproj" />
   <Project Path="Library.Console/Library.Console.csproj" />
+  <Project Path="Library.Infrastructure/Library.Infrastructure.csproj" />
+  <Project Path="Library.Nosql/Library.Nosql.csproj" />
   <Project Path="Library.Tests/Library.Tests.csproj" />
 </Solution>
