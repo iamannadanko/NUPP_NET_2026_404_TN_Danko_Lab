@@ -163,11 +163,9 @@ namespace Library.ConsoleApp
             Console.WriteLine($"-> З них журналів (таблиця Magazines): {totalMagazines}");
 
             // -------------------------------------------------------------
-            // ДОДАТКОВЕ ЗАВДАННЯ (+2 БАЛИ): Нереляційна база даних MongoDB (Library.Nosql)
+            // Робота з нереляційною базою даних MongoDB (Library.Nosql)
             // -------------------------------------------------------------
-            Console.WriteLine("\n=================================================================");
-            Console.WriteLine("    ДОДАТКОВЕ ЗАВДАННЯ (+2 БАЛИ): Нереляційна база даних MongoDB  ");
-            Console.WriteLine("=================================================================");
+            Console.WriteLine("\n--- 7. Робота з нереляційною базою даних (MongoDB) ---");
             try
             {
                 var mongoRepo = new Library.Nosql.MongoRepository<Library.Nosql.Models.BookDocument>();
@@ -207,7 +205,7 @@ namespace Library.ConsoleApp
             }
 
             Console.WriteLine("\n=================================================================");
-            Console.WriteLine("        Усі операції успішно виконано (Реляційна + NoSQL БД)!    ");
+            Console.WriteLine("                  Усі операції успішно виконано!                 ");
             Console.WriteLine("=================================================================");
 
             Console.WriteLine("\nНатисніть будь-яку клавішу для завершення...");
